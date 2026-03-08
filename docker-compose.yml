@@ -1,0 +1,115 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Fraud Detection NIM — Local Dev Stack
+#  All modules run as CPU-only containers.
+#  For GPU inference, use k8s manifests with L40S node selectors.
+# ─────────────────────────────────────────────────────────────────────────────
+
+x-common-env: &common-env
+  REDIS_URL:             redis://redis:6379
+  KAGGLE_DATASET_PATH:   /data/kaggle_seed.csv
+  GPU_ENABLED:           "false"
+  FRAUD_THRESHOLD:       "0.7"
+
+services:
+
+  # ── Feature Bus ─────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Generator ───────────────────────────────────────────────────────────────
+  generator:
+    build:
+      context: .
+      dockerfile: modules/generator/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      TX_RATE_NORMAL:  "100"
+      TX_RATE_STRESS:  "2000"
+      GPU_TX_FRACTION: "0.5"
+    volumes:
+      - ./shared/data:/data:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ── Data Prep ───────────────────────────────────────────────────────────────
+  data-prep:
+    build:
+      context: .
+      dockerfile: modules/data-prep/Dockerfile
+      target: cpu
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      BATCH_SIZE: "200"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ── Inference ───────────────────────────────────────────────────────────────
+  inference:
+    build:
+      context: .
+      dockerfile: modules/inference/Dockerfile
+      target: cpu
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      TRITON_URL:             "triton:8001"
+      INFERENCE_BATCH_SIZE:  "64"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ── Dashboard ───────────────────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: modules/dashboard/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *common-env
+      AVG_FRAUD_LOSS_USD:   "175"
+      FALSE_POSITIVE_COST:  "4.5"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ── (Optional) Triton Inference Server ──────────────────────────────────────
+  # Uncomment when running with GPU and model artifacts available
+  # triton:
+  #   image: nvcr.io/nvidia/tritonserver:24.12-py3
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8000:8000"   # HTTP
+  #     - "8001:8001"   # gRPC
+  #     - "8002:8002"   # Metrics
+  #   volumes:
+  #     - ./models:/models
+  #   command: tritonserver --model-repository=/models
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+
+volumes:
+  redis-data:

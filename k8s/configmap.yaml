@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fraud-detection-config
+  namespace: fraud-detection
+data:
+  REDIS_URL:              "redis://redis:6379"
+  KAGGLE_DATASET_PATH:    "/data/kaggle_seed.csv"
+  GPU_ENABLED:            "true"
+  FRAUD_THRESHOLD:        "0.7"
+  TX_RATE_NORMAL:         "500"
+  TX_RATE_STRESS:         "5000"
+  GPU_TX_FRACTION:        "0.5"
+  BATCH_SIZE:             "500"
+  INFERENCE_BATCH_SIZE:   "128"
+  TRITON_URL:             "triton:8001"
+  TRITON_MODEL:           "fraud_ensemble"
+  AVG_FRAUD_LOSS_USD:     "175"
+  FALSE_POSITIVE_COST:    "4.5"

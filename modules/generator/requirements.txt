@@ -1,0 +1,4 @@
+faker==24.9.0
+numpy==1.26.4
+pandas==2.2.2
+redis==5.0.4

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fraud Detection NIM — Live Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --card: #111827;
+    --border: #1f2937;
+    --accent: #76b900;        /* NVIDIA green */
+    --accent2: #00c6ff;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+    --text: #e5e7eb;
+    --muted: #6b7280;
+    --stress: #ff3b3b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  header .logo { display: flex; align-items: center; gap: 10px; }
+  header .logo .nvidia-badge {
+    background: var(--accent); color: #000; font-weight: 800;
+    padding: 3px 8px; border-radius: 4px; font-size: 12px; letter-spacing: 1px;
+  }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+  header .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  header .dot.off { background: var(--danger); animation: none; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  main { padding: 20px 24px; display: grid; gap: 16px; max-width: 1600px; margin: 0 auto; }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .kpi.highlight { border-color: var(--accent); box-shadow: 0 0 16px rgba(118,185,0,0.12); }
+  .kpi.danger    { border-color: var(--danger);  box-shadow: 0 0 16px rgba(239,68,68,0.12); }
+  .kpi label  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi .value { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .kpi .sub   { font-size: 12px; color: var(--muted); }
+  .kpi .value.green { color: var(--accent); }
+  .kpi .value.red   { color: var(--danger); }
+  .kpi .value.blue  { color: var(--accent2); }
+
+  /* Charts row */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .card h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+              letter-spacing: 0.5px; margin-bottom: 14px; }
+
+  /* Pipeline comparison */
+  .pipeline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pipeline-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px;
+  }
+  .pipeline-card h4 { font-size: 12px; font-weight: 700; color: var(--muted); 
+                       text-transform: uppercase; margin-bottom: 12px; }
+  .pipeline-card h4 .badge {
+    display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px;
+    margin-left: 6px; font-weight: 700;
+  }
+  .badge-gpu { background: rgba(118,185,0,0.2); color: var(--accent); }
+  .badge-cpu { background: rgba(0,198,255,0.2); color: var(--accent2); }
+
+  .metric-row { display: flex; justify-content: space-between; align-items: center;
+                padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-row .label { color: var(--muted); }
+  .metric-row .val   { font-weight: 600; }
+
+  /* Progress bar */
+  .progress-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+  /* FB Section */
+  .fb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .fb-stream { background: #0d1424; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .fb-stream .stream-name { font-size: 10px; color: var(--accent); font-family: monospace;
+                             font-weight: 700; margin-bottom: 6px; }
+  .fb-stream .stream-len  { font-size: 20px; font-weight: 700; }
+  .fb-stream .stream-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Stress button */
+  .stress-section { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .btn-stress {
+    padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700;
+    cursor: pointer; border: none; transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .btn-stress.off {
+    background: var(--stress); color: white;
+    box-shadow: 0 0 20px rgba(255,59,59,0.4);
+  }
+  .btn-stress.off:hover { background: #ff6060; box-shadow: 0 0 30px rgba(255,59,59,0.6); }
+  .btn-stress.on {
+    background: var(--accent); color: #000;
+    box-shadow: 0 0 20px rgba(118,185,0,0.4);
+  }
+  .btn-stress.on:hover { background: #8ed400; }
+
+  .stress-info { font-size: 13px; color: var(--muted); max-width: 400px; }
+  .stress-info strong { color: var(--text); }
+
+  .stress-active-banner {
+    background: rgba(255,59,59,0.1); border: 1px solid var(--stress);
+    border-radius: 8px; padding: 10px 16px; font-size: 13px; color: var(--stress);
+    font-weight: 600; animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+  /* Biz value panel */
+  .biz-panel {
+    background: linear-gradient(135deg, rgba(118,185,0,0.08), rgba(0,198,255,0.05));
+    border: 1px solid var(--accent); border-radius: 10px; padding: 20px 24px;
+  }
+  .biz-panel h3 { font-size: 14px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
+  .biz-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .biz-stat label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+  .biz-stat .v    { font-size: 22px; font-weight: 700; color: var(--accent); }
+
+  .uptime { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef, useCallback } = React;
+const { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
+        CartesianGrid, ResponsiveContainer, Legend } = Recharts;
+
+const API = window.location.origin;
+const WS  = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') +
+            '//' + window.location.host + '/ws/metrics';
+
+function fmt$(n) { return '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0}); }
+function fmtN(n) { return Number(n).toLocaleString('en-US', {maximumFractionDigits: 0}); }
+function fmtMs(n) { return n < 1 ? '<1ms' : n.toFixed(1) + 'ms'; }
+
+function KPI({ label, value, sub, cls, color }) {
+  return React.createElement('div', { className: 'kpi ' + (cls||'') },
+    React.createElement('label', null, label),
+    React.createElement('div', { className: 'value ' + (color||'') }, value),
+    sub && React.createElement('div', { className: 'sub' }, sub)
+  );
+}
+
+function MetricRow({ label, val, unit, pct, color }) {
+  return React.createElement('div', { className: 'metric-row' },
+    React.createElement('span', { className: 'label' }, label),
+    React.createElement('div', null,
+      React.createElement('span', { className: 'val' }, val + (unit||'')),
+      pct !== undefined && React.createElement('div', { className: 'progress-bar' },
+        React.createElement('div', {
+          className: 'progress-fill',
+          style: { width: Math.min(100, pct) + '%',
+                   background: color || 'var(--accent)' }
+        })
+      )
+    )
+  );
+}
+
+function App() {
+  const [metrics, setMetrics] = useState(null);
+  const [stress, setStress] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [history, setHistory] = useState([]);
+  const wsRef = useRef(null);
+
+  const connect = useCallback(() => {
+    const ws = new WebSocket(WS);
+    wsRef.current = ws;
+    ws.onopen = () => { setConnected(true); ws.send('ping'); };
+    ws.onclose = () => { setConnected(false); setTimeout(connect, 2000); };
+    ws.onerror = () => ws.close();
+    ws.onmessage = e => {
+      const d = JSON.parse(e.data);
+      setMetrics(d);
+      setStress(d.stress_mode);
+      setHistory(h => {
+        const ts = new Date(d.timestamp * 1000).toLocaleTimeString();
+        const next = [...h, {
+          ts,
+          cpu_tps: d.cpu_tps,
+          gpu_tps: d.gpu_tps,
+          gen_tps: d.generator_tps,
+          cpu_lat: d.cpu_latency_ms,
+          gpu_lat: d.gpu_latency_ms,
+        }].slice(-60);
+        return next;
+      });
+    };
+  }, []);
+
+  useEffect(() => { connect(); return () => wsRef.current?.close(); }, [connect]);
+  useEffect(() => { if (wsRef.current?.readyState === 1) wsRef.current.send('ping'); }, [metrics]);
+
+  const toggleStress = async () => {
+    const action = stress ? 'disable' : 'enable';
+    await fetch(`${API}/api/stress/${action}`, { method: 'POST' });
+  };
+
+  if (!metrics) return React.createElement('div', {
+    style: { display:'flex', alignItems:'center', justifyContent:'center',
+             height:'100vh', fontSize:'18px', color:'var(--muted)' }
+  }, '⏳ Connecting to Feature Bus...');
+
+  const fb = metrics.fb_stream_lengths || {};
+  const fbTotal = Object.values(fb).reduce((a, b) => a + b, 0);
+
+  return React.createElement('div', null,
+    // ── Header ──
+    React.createElement('header', null,
+      React.createElement('div', { className: 'logo' },
+        React.createElement('span', { className: 'nvidia-badge' }, 'NVIDIA'),
+        React.createElement('h1', null, 'Financial Fraud Detection NIM — Live Dashboard')
+      ),
+      React.createElement('div', { className: 'status' },
+        React.createElement('div', { className: 'dot' + (connected ? '' : ' off') }),
+        connected ? 'Live' : 'Reconnecting...',
+        stress && React.createElement('span', {
+          style: { color: 'var(--stress)', fontWeight: 700 }
+        }, '⚡ STRESS ACTIVE')
+      )
+    ),
+
+    React.createElement('main', null,
+      // ── KPI Row ──
+      React.createElement('div', { className: 'kpi-row' },
+        React.createElement(KPI, {
+          label: '💰 Estimated $ Saved', value: fmt$(metrics.dollars_saved),
+          cls: 'highlight', color: 'green',
+          sub: `${fmtN(metrics.total_fraud_count)} fraud txns caught`
+        }),
+        React.createElement(KPI, {
+          label: 'Total Transactions', value: fmtN(metrics.total_tx),
+          sub: `Gen TPS: ${metrics.generator_tps.toFixed(0)}`
+        }),
+        React.createElement(KPI, {
+          label: 'Fraud Value Blocked', value: fmt$(metrics.total_fraud_value),
+          cls: 'danger', color: 'red',
+          sub: 'Total value of flagged transactions'
+        }),
+        React.createElement(KPI, {
+          label: 'CPU Pipeline TPS', value: metrics.cpu_tps.toFixed(0),
+          color: 'blue', sub: `Latency: ${fmtMs(metrics.cpu_latency_ms)}`
+        }),
+        React.createElement(KPI, {
+          label: 'GPU Pipeline TPS', value: metrics.gpu_tps.toFixed(0),
+          color: 'green', sub: `Latency: ${fmtMs(metrics.gpu_latency_ms)}`
+        }),
+        React.createElement(KPI, {
+          label: 'Feature Bus Depth', value: fmtN(fbTotal),
+          sub: `${Object.keys(fb).length} active streams`
+        })
+      ),
+
+      // ── Business Value Panel ──
+      React.createElement('div', { className: 'biz-panel' },
+        React.createElement('h3', null, '📊 Business Impact — Financial Services ROI'),
+        React.createElement('div', { className: 'biz-stats' },
+          React.createElement('div', { className: 'biz-stat' },
+            React.createElement('label', null, 'Fraud Blocked ($)'),
+            React.createElement('div', { className: 'v' }, fmt$(metrics.dollars_saved))
+          ),
+          React.createElement('div', { className: 'biz-stat' },
+            React.createElement('label', null, 'Fraud Txns Caught'),
+            React.createElement('div', { className: 'v' }, fmtN(metrics.total_fraud_count))
+          ),
+          React.createElement('div', { className: 'biz-stat' },
+            React.createElement('label', null, 'Avg Detection Latency'),
+            React.createElement('div', { className: 'v' },
+              fmtMs((metrics.cpu_latency_ms + metrics.gpu_latency_ms) / 2)
+            )
+          ),
+          React.createElement('div', { className: 'biz-stat' },
+            React.createElement('label', null, 'Uptime'),
+            React.createElement('div', { className: 'v' },
+              Math.floor(metrics.uptime_seconds / 60) + 'm ' +
+              (metrics.uptime_seconds % 60).toFixed(0) + 's'
+            )
+          )
+        )
+      ),
+
+      // ── Charts ──
+      React.createElement('div', { className: 'charts-row' },
+        React.createElement('div', { className: 'card' },
+          React.createElement('h3', null, 'Throughput (TPS) — 60s window'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 220 },
+            React.createElement(AreaChart, { data: history },
+              React.createElement(CartesianGrid, { stroke: '#1f2937', strokeDasharray: '3 3' }),
+              React.createElement(XAxis, { dataKey: 'ts', tick: { fill: '#6b7280', fontSize: 10 },
+                                           interval: 'preserveStartEnd' }),
+              React.createElement(YAxis, { tick: { fill: '#6b7280', fontSize: 10 } }),
+              React.createElement(Tooltip, { contentStyle: { background: '#111827', border: '1px solid #1f2937' }}),
+              React.createElement(Legend, null),
+              React.createElement(Area, { type: 'monotone', dataKey: 'gen_tps', stroke: '#f59e0b',
+                                          fill: 'rgba(245,158,11,0.1)', name: 'Generator' }),
+              React.createElement(Area, { type: 'monotone', dataKey: 'gpu_tps', stroke: '#76b900',
+                                          fill: 'rgba(118,185,0,0.1)', name: 'GPU Inference' }),
+              React.createElement(Area, { type: 'monotone', dataKey: 'cpu_tps', stroke: '#00c6ff',
+                                          fill: 'rgba(0,198,255,0.1)', name: 'CPU Inference' })
+            )
+          )
+        ),
+        React.createElement('div', { className: 'card' },
+          React.createElement('h3', null, 'Inference Latency (ms) — 60s window'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 220 },
+            React.createElement(LineChart, { data: history },
+              React.createElement(CartesianGrid, { stroke: '#1f2937', strokeDasharray: '3 3' }),
+              React.createElement(XAxis, { dataKey: 'ts', tick: { fill: '#6b7280', fontSize: 10 },
+                                           interval: 'preserveStartEnd' }),
+              React.createElement(YAxis, { tick: { fill: '#6b7280', fontSize: 10 } }),
+              React.createElement(Tooltip, { contentStyle: { background: '#111827', border: '1px solid #1f2937' }}),
+              React.createElement(Legend, null),
+              React.createElement(Line, { type: 'monotone', dataKey: 'gpu_lat', stroke: '#76b900',
+                                          dot: false, name: 'GPU latency ms', strokeWidth: 2 }),
+              React.createElement(Line, { type: 'monotone', dataKey: 'cpu_lat', stroke: '#00c6ff',
+                                          dot: false, name: 'CPU latency ms', strokeWidth: 2 })
+            )
+          )
+        )
+      ),
+
+      // ── Pipeline detail ──
+      React.createElement('div', { className: 'pipeline-row' },
+        React.createElement('div', { className: 'pipeline-card' },
+          React.createElement('h4', null, 'GPU Pipeline',
+            React.createElement('span', { className: 'badge badge-gpu' }, 'L40S')
+          ),
+          React.createElement(MetricRow, { label: 'Inference TPS',
+            val: metrics.gpu_tps.toFixed(1), pct: Math.min(100, metrics.gpu_tps / 20),
+            color: 'var(--accent)' }),
+          React.createElement(MetricRow, { label: 'Latency', val: fmtMs(metrics.gpu_latency_ms) }),
+          React.createElement(MetricRow, { label: 'Fraud Blocked', val: fmt$(metrics.total_fraud_value * 0.5) }),
+          React.createElement(MetricRow, { label: 'Direct Tx (no prep)', val: fmtN(metrics.gpu_tx) }),
+          React.createElement(MetricRow, { label: 'FB Stream Depth',
+            val: fmtN(fb.gpu_tx || 0) + ' / ' + fmtN(fb.gpu_scores || 0) })
+        ),
+        React.createElement('div', { className: 'pipeline-card' },
+          React.createElement('h4', null, 'CPU Pipeline',
+            React.createElement('span', { className: 'badge badge-cpu' }, 'x86')
+          ),
+          React.createElement(MetricRow, { label: 'Data Prep TPS',
+            val: metrics.dataprep_tps.toFixed(1), pct: Math.min(100, metrics.dataprep_tps / 20),
+            color: 'var(--accent2)' }),
+          React.createElement(MetricRow, { label: 'Prep Latency', val: fmtMs(metrics.dataprep_latency_ms) }),
+          React.createElement(MetricRow, { label: 'Inference TPS', val: metrics.cpu_tps.toFixed(1) }),
+          React.createElement(MetricRow, { label: 'Inference Latency', val: fmtMs(metrics.cpu_latency_ms) }),
+          React.createElement(MetricRow, { label: 'FB Stream Depth',
+            val: fmtN(fb.cpu_tx || 0) + ' → ' + fmtN(fb.cpu_features || 0) })
+        )
+      ),
+
+      // ── Feature Bus ──
+      React.createElement('div', { className: 'card' },
+        React.createElement('h3', null, 'Feature Bus — Stream Utilisation'),
+        React.createElement('div', { className: 'fb-grid' },
+          ...Object.entries(fb).map(([name, len]) =>
+            React.createElement('div', { className: 'fb-stream', key: name },
+              React.createElement('div', { className: 'stream-name' }, name),
+              React.createElement('div', { className: 'stream-len' }, fmtN(len)),
+              React.createElement('div', { className: 'stream-sub' }, 'messages queued'),
+              React.createElement('div', { className: 'progress-bar', style: { marginTop: '6px' } },
+                React.createElement('div', {
+                  className: 'progress-fill',
+                  style: { width: Math.min(100, len / 1000 * 100) + '%',
+                           background: len > 5000 ? 'var(--warn)' : 'var(--accent)' }
+                })
+              )
+            )
+          )
+        )
+      ),
+
+      // ── Stress test ──
+      React.createElement('div', { className: 'card' },
+        React.createElement('h3', null, '⚡ Stress Test — Load Generator'),
+        React.createElement('div', { className: 'stress-section' },
+          React.createElement('button', {
+            className: 'btn-stress ' + (stress ? 'on' : 'off'),
+            onClick: toggleStress
+          }, stress ? '🟢 DISABLE STRESS TEST' : '⚡ ENABLE STRESS TEST'),
+          stress && React.createElement('div', { className: 'stress-active-banner' },
+            '🔴 STRESS MODE ACTIVE — TX rate elevated to maximum'
+          ),
+          React.createElement('div', { className: 'stress-info' },
+            React.createElement('strong', null, 'Stress test'),
+            ' bumps the transaction generator from normal rate to maximum throughput via Redis pub/sub. ',
+            'Watch latency hold stable while TPS spikes — demonstrating GPU inference resilience on L40S nodes.'
+          )
+        )
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>

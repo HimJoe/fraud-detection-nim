@@ -1,0 +1,29 @@
+---
+# Kaggle seed data PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kaggle-data-pvc
+  namespace: fraud-detection
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: local-path    # adjust for your cluster
+
+---
+# Triton model repository PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-repo-pvc
+  namespace: fraud-detection
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: local-path
