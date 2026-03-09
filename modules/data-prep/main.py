@@ -1,7 +1,7 @@
 """
 modules/data-prep/main.py
 Feature engineering module.
-Reads raw transactions from cpu_tx stream on the Feature Bus,
+Reads raw transactions from cpu_tx stream on the FlashBlade,
 applies feature engineering, and writes enriched features to cpu_features.
 
 Uses cuDF (GPU) when available, falls back to pandas seamlessly.
@@ -16,7 +16,7 @@ from collections import defaultdict, deque
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from shared.featurebus.client import (
-    FeatureBusClient, EnrichedFeatures, Metric,
+    FlashBladeClient, EnrichedFeatures, Metric,
     STREAM_CPU_TX, STREAM_CPU_FEATURES
 )
 
@@ -159,8 +159,8 @@ def engineer_features(raw: dict) -> EnrichedFeatures:
 # ─── Main processing loop ─────────────────────────────────────────────────────
 
 def main():
-    fb = FeatureBusClient(REDIS_URL)
-    logger.info(f"Data-prep connecting to Feature Bus at {REDIS_URL}")
+    fb = FlashBladeClient(REDIS_URL)
+    logger.info(f"Data-prep connecting to FlashBlade at {REDIS_URL}")
 
     # Wait for Redis
     for _ in range(30):

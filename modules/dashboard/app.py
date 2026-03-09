@@ -160,7 +160,7 @@ async def consume_metrics(r: aioredis.Redis):
 
 
 async def poll_stream_lengths(r: aioredis.Redis):
-    """Poll ALL Feature Bus stream lengths — proves everything flows through the FB."""
+    """Poll ALL FlashBlade stream lengths — proves everything flows through the FB."""
     while True:
         try:
             lengths = {}
@@ -208,7 +208,7 @@ async def broadcast_ws():
 
 async def consume_scores(r: aioredis.Redis):
     """
-    Read directly from cpu_scores and gpu_scores Feature Bus streams.
+    Read directly from cpu_scores and gpu_scores FlashBlade streams.
     This is the value prop: dashboard reads everything from the FB,
     never from a direct module call.
     """
@@ -247,7 +247,7 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(consume_scores(r))   # reads directly from FB score streams
     asyncio.create_task(poll_stream_lengths(r))
     asyncio.create_task(broadcast_ws())
-    logger.info("Dashboard started — reading all data from Feature Bus streams")
+    logger.info("Dashboard started — reading all data from FlashBlade streams")
     yield
     await r.aclose()
 

@@ -1,6 +1,6 @@
 """
 shared/featurebus/client.py
-Feature Bus client — thin wrapper around Redis Streams.
+FlashBlade client — thin wrapper over Pure Storage FlashBlade around Redis Streams.
 All modules use this to read/write transactions and features.
 """
 import json
@@ -89,7 +89,7 @@ class Metric:
 
 # ─── Client ───────────────────────────────────────────────────────────────────
 
-class FeatureBusClient:
+class FlashBladeClient:
     def __init__(self, redis_url: str = "redis://redis:6379", maxlen: int = 100_000):
         self.r = redis.from_url(redis_url, decode_responses=True)
         self.maxlen = maxlen

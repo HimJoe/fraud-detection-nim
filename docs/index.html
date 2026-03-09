@@ -253,8 +253,8 @@ footer a:hover { color: var(--green); }
 <!-- Architecture -->
 <section id="architecture">
   <div class="section-label">System Design</div>
-  <h2>Feature Bus Architecture</h2>
-  <p class="section-sub">All modules communicate exclusively via Redis Streams — the Feature Bus. No direct module-to-module calls. Ever.</p>
+  <h2>FlashBlade Architecture</h2>
+  <p class="section-sub">All modules communicate exclusively via Redis Streams — the FlashBlade. No direct module-to-module calls. Ever.</p>
 
   <div class="arch-diagram">
     <div class="arch-flow">
@@ -293,7 +293,7 @@ footer a:hover { color: var(--green); }
       </div>
     </div>
     <div class="fb-bar">
-      <div class="fb-label">⚡ Feature Bus — Redis Streams</div>
+      <div class="fb-label">⚡ FlashBlade — Pure Storage / Redis Streams</div>
       <div class="fb-sub">cpu_tx &nbsp;·&nbsp; gpu_tx &nbsp;·&nbsp; cpu_features &nbsp;·&nbsp; cpu_scores &nbsp;·&nbsp; gpu_scores &nbsp;·&nbsp; metrics</div>
     </div>
   </div>
@@ -326,7 +326,7 @@ footer a:hover { color: var(--green); }
     <div class="mod-card">
       <div class="mod-num">04 / DASHBOARD</div>
       <h3>Live Dashboard</h3>
-      <p>Real-time metrics via WebSocket. Shows $$ saved, TPS, latency charts, Feature Bus depth, pipeline comparison, and a stress test button that spikes TX load via pub/sub.</p>
+      <p>Real-time metrics via WebSocket. Shows $$ saved, TPS, latency charts, FlashBlade depth, pipeline comparison, and a stress test button that spikes TX load via pub/sub.</p>
       <div class="tags"><span class="tag">FastAPI</span><span class="tag">WebSocket</span><span class="tag">React</span><span class="tag">Canvas charts</span></div>
     </div>
   </div>

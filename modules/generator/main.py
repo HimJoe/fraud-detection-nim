@@ -3,7 +3,7 @@ modules/generator/main.py
 Synthetic transaction generator.
 Loads Kaggle credit-card fraud CSV as a seed for realistic statistical profiles,
 then uses Faker to synthesise realistic card/merchant/cardholder data.
-Writes to BOTH cpu_tx and gpu_tx streams on the Feature Bus.
+Writes to BOTH cpu_tx and gpu_tx streams on the FlashBlade.
 Responds to Redis pub/sub control messages for STRESS mode.
 """
 import os
@@ -22,7 +22,7 @@ from faker import Faker
 
 # Make shared importable when running directly
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from shared.featurebus.client import FeatureBusClient, RawTransaction, Metric
+from shared.featurebus.client import FlashBladeClient, RawTransaction, Metric
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [generator] %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ def build_pools(n_cardholders=5000, n_merchants=500):
 
 class TxGenerator:
     def __init__(self):
-        self.fb     = FeatureBusClient(REDIS_URL)
+        self.fb     = FlashBladeClient(REDIS_URL)
         self.rate   = TX_RATE_NORMAL        # tx/sec (mutable via stress control)
         self.stress = False
         self._stop  = threading.Event()

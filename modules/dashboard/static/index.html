@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fraud Detection NIM — Feature Bus Dashboard</title>
+<title>Fraud Detection NIM — FlashBlade Dashboard</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #060910; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -34,7 +34,7 @@ h1 { font-size:14px; font-weight:700; }
 
 main { position:relative; z-index:1; padding:18px 24px; max-width:1400px; margin:0 auto; display:grid; gap:14px; }
 
-/* ── Feature Bus Hero ── */
+/* ── FlashBlade Hero ── */
 .fb-hero {
   background: linear-gradient(135deg, rgba(0,198,255,0.06), rgba(118,185,0,0.04));
   border: 1px solid rgba(0,198,255,0.25);
@@ -148,7 +148,7 @@ main { position:relative; z-index:1; padding:18px 24px; max-width:1400px; margin
 <main id="app">
   <div class="connecting">
     <div class="spin"></div>
-    Connecting to Feature Bus...
+    Connecting to FlashBlade...
   </div>
 </main>
 
@@ -200,12 +200,12 @@ const STREAM_META = {
 
 function buildUI() {
   $('app').innerHTML = `
-    <!-- Feature Bus Hero -->
+    <!-- FlashBlade Hero -->
     <div class="fb-hero">
       <div class="fb-hero-top">
         <div class="fb-title">
-          <span class="fb-badge">FEATURE BUS</span>
-          <h2>Redis Streams — The Core Value Proposition</h2>
+          <span class="fb-badge">FLASHBLADE</span>
+          <h2>Pure Storage FlashBlade — The Core Value Proposition</h2>
         </div>
         <div class="fb-stats">
           <div class="fb-stat"><div class="v" id="fb-wps">0</div><div class="l">writes / sec</div></div>
@@ -213,7 +213,7 @@ function buildUI() {
           <div class="fb-stat"><div class="v" id="fb-streams">0</div><div class="l">active streams</div></div>
         </div>
       </div>
-      <div class="fb-tagline">Every transaction is written to the FB, enriched through it, scored via it, and read by the dashboard from it. No module calls another directly — ever.</div>
+      <div class="fb-tagline">Every transaction is written to FlashBlade, enriched through it, scored via it, and read by the dashboard from it. Pure Storage FlashBlade provides the high-throughput storage layer — no module calls another directly — ever.</div>
 
       <!-- Flow diagram -->
       <div class="fb-flow" style="margin-top:14px">
@@ -221,7 +221,7 @@ function buildUI() {
         <div class="fb-arrow"><div class="sl">cpu_tx</div><div class="al"></div><div class="sl">gpu_tx</div></div>
         <div class="fb-node"><div class="nn">02</div><div class="nm">Data Prep</div><div class="nt">cuDF/pandas</div></div>
         <div class="fb-arrow"><div class="sl">cpu_features</div><div class="al"></div></div>
-        <div class="fb-node accent"><div class="nn">FEATURE BUS</div><div class="nm">Redis Streams</div><div class="nd" id="flow-fb-depth">0 msgs</div></div>
+        <div class="fb-node accent"><div class="nn">FLASHBLADE</div><div class="nm">Redis Streams</div><div class="nd" id="flow-fb-depth">0 msgs</div></div>
         <div class="fb-arrow"><div class="al"></div><div class="sl">*_pending→scores</div></div>
         <div class="fb-node"><div class="nn">03</div><div class="nm">Inference</div><div class="nt">Triton+XGBoost</div></div>
         <div class="fb-arrow"><div class="sl">*_scores</div><div class="al"></div></div>
@@ -289,11 +289,11 @@ function buildUI() {
 
     <!-- Stress -->
     <div class="card">
-      <h3>⚡ Stress Test — Feature Bus Load</h3>
+      <h3>⚡ Stress Test — FlashBlade Load</h3>
       <div class="stress-section">
         <button class="btn btn-on" id="s-btn" onclick="toggleStress()">⚡ ENABLE STRESS TEST</button>
         <div class="banner" id="s-banner">🔴 STRESS MODE ACTIVE — watch FB writes/sec spike</div>
-        <div class="stress-info">Stress mode pumps TX rate to maximum via Redis pub/sub control channel — itself part of the Feature Bus. Watch the stream depths and writes/sec surge while latency holds stable on L40S.</div>
+        <div class="stress-info">Stress mode pumps TX rate to maximum via Redis pub/sub control channel — itself part of the FlashBlade. Watch the stream depths and writes/sec surge while latency holds stable on L40S.</div>
       </div>
     </div>`;
 
@@ -387,7 +387,7 @@ function connect() {
   const ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws/metrics');
   ws.onopen=()=>{
     $('dot').className='dot live';
-    $('conn-txt').textContent='Live — reading from Feature Bus';
+    $('conn-txt').textContent='Live — reading from FlashBlade';
     if(!uiBuilt){buildUI();uiBuilt=true;}
   };
   ws.onmessage=e=>{ try{update(JSON.parse(e.data));}catch(err){console.error(err);} };

@@ -17,7 +17,7 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from shared.featurebus.client import (
-    FeatureBusClient, FraudScore, Metric,
+    FlashBladeClient, FraudScore, Metric,
     STREAM_CPU_FEATURES, STREAM_GPU_TX,
     STREAM_CPU_SCORES, STREAM_GPU_SCORES,
     STREAM_CPU_PENDING, STREAM_GPU_PENDING
@@ -146,7 +146,7 @@ class FallbackScorer:
 
 class InferenceWorker:
     def __init__(self, pipeline: str, stream_in: str, stream_out: str,
-                 feature_cols: list, fb: FeatureBusClient,
+                 feature_cols: list, fb: FlashBladeClient,
                  triton: TritonScoringClient, fallback: FallbackScorer):
         self.pipeline     = pipeline
         self.stream_in    = stream_in
@@ -212,7 +212,7 @@ class InferenceWorker:
         if not rows:
             return
 
-        # ── Write pending marker to Feature Bus BEFORE scoring ────────────────
+        # ── Write pending marker to FlashBlade BEFORE scoring ────────────────
         # This is the key value prop: every inference event is mediated by the FB.
         # pending → score → write_score — no direct module-to-module calls.
         for meta in metas:
@@ -274,7 +274,7 @@ class InferenceWorker:
 
 
 def main():
-    fb       = FeatureBusClient(REDIS_URL)
+    fb       = FlashBladeClient(REDIS_URL)
     triton   = TritonScoringClient(TRITON_URL, TRITON_MODEL) if GPU_ENABLED else None
     fallback = FallbackScorer()
 

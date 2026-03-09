@@ -37,12 +37,12 @@ Kaggle CSV seed
                                                                         └─────────────────┘
 ```
 
-## ⚡ The Feature Bus — Core Value Proposition
+## ⚡ The FlashBlade — Core Value Proposition
 
 **This is the key difference from the standard NVIDIA blueprint.**
 
 > No module ever calls another module directly. Every transaction, feature vector,
-> inference result, and metric is written to and read from the Feature Bus (Redis Streams).
+> inference result, and metric is written to and read from the FlashBlade (Pure Storage / Redis Streams).
 
 The full lifecycle of every transaction through the FB:
 ```
@@ -62,8 +62,8 @@ Why this matters for the client demo:
 
 The dashboard's FB hero section shows live writes/sec across all streams — this is the number to highlight in the client demo.
 
-**The Feature Bus is Redis Streams** — all inter-module communication goes through it.
-Never have modules call each other directly. Always go through the Feature Bus.
+**The FlashBlade is Redis Streams** — all inter-module communication goes through it.
+Never have modules call each other directly. Always go through the FlashBlade.
 
 ---
 
@@ -83,7 +83,7 @@ Never have modules call each other directly. Always go through the Feature Bus.
 **`shared/featurebus/client.py`** is the single source of truth for:
 - Stream names (`STREAM_CPU_TX`, `STREAM_GPU_TX`, `STREAM_CPU_FEATURES`, etc.)
 - Dataclass schemas (`RawTransaction`, `EnrichedFeatures`, `FraudScore`, `Metric`)
-- `FeatureBusClient` — all Redis read/write operations
+- `FlashBladeClient` — all Redis read/write operations
 
 When adding a new stream or changing a schema field, **edit here first**, then update
 the modules that use it. Do not hardcode stream names in individual modules.
@@ -207,7 +207,7 @@ docker compose logs -f generator
 docker compose logs -f inference
 ```
 
-**Check Feature Bus stream depths:**
+**Check FlashBlade stream depths:**
 ```bash
 redis-cli xlen cpu_tx
 redis-cli xlen cpu_features
@@ -275,7 +275,7 @@ fraud-detection-nim/
 │           └── index.html           ← React frontend (single file)
 ├── k8s/
 │   ├── namespace.yaml
-│   ├── redis.yaml                   ← Feature Bus
+│   ├── redis.yaml                   ← FlashBlade
 │   ├── configmap.yaml               ← all env vars
 │   ├── deployments.yaml             ← all 4 modules + Triton
 │   ├── hpa.yaml                     ← auto-scaling
