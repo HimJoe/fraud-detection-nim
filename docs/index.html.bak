@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Financial Fraud Detection NIM — NVIDIA Blueprint</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --green: #76b900;
+  --green2: #a8e063;
+  --bg: #060910;
+  --card: #0d1220;
+  --border: #1a2540;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #00c6ff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+
+/* ── Background grid ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(118,185,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(118,185,0,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 48px;
+  background: rgba(6,9,16,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; }
+.nvidia-tag { background: var(--green); color: #000; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 3px; letter-spacing: 1px; }
+.nav-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+.nav-links { display: flex; gap: 24px; }
+.nav-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--green); }
+.nav-cta { background: var(--green); color: #000; font-size: 13px; font-weight: 700; padding: 8px 18px; border-radius: 6px; text-decoration: none; transition: all 0.2s; }
+.nav-cta:hover { background: var(--green2); }
+
+/* ── Hero ── */
+.hero {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 120px 24px 80px;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid rgba(118,185,0,0.3);
+  background: rgba(118,185,0,0.06);
+  padding: 6px 14px; border-radius: 20px;
+  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--green);
+  margin-bottom: 28px;
+  animation: fadeUp 0.6s ease both;
+}
+.dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+h1.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(42px, 7vw, 88px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -2px;
+  margin-bottom: 24px;
+  animation: fadeUp 0.7s 0.1s ease both;
+}
+.hero-title .line1 { display: block; color: var(--text); }
+.hero-title .line2 { display: block; color: var(--green); }
+
+.hero-sub {
+  font-size: 18px; color: var(--muted); max-width: 600px; line-height: 1.7;
+  margin-bottom: 40px;
+  animation: fadeUp 0.7s 0.2s ease both;
+}
+
+.hero-buttons {
+  display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+  animation: fadeUp 0.7s 0.3s ease both;
+}
+.btn-primary { background: var(--green); color: #000; font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: 8px; text-decoration: none; transition: all 0.2s; }
+.btn-primary:hover { background: var(--green2); transform: translateY(-1px); }
+.btn-secondary { background: transparent; color: var(--text); font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 8px; border: 1px solid var(--border); text-decoration: none; transition: all 0.2s; }
+.btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+/* ── Stats bar ── */
+.stats-bar {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.stat { padding: 28px 32px; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat .n { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--green); }
+.stat .l { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* ── Section ── */
+section { position: relative; z-index: 1; padding: 96px 48px; max-width: 1200px; margin: 0 auto; }
+.section-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--green); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+h2 { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 44px); font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+.section-sub { font-size: 16px; color: var(--muted); max-width: 560px; line-height: 1.7; margin-bottom: 48px; }
+
+/* ── Architecture ── */
+.arch-diagram {
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+  padding: 40px; overflow-x: auto;
+}
+.arch-flow {
+  display: flex; align-items: center; gap: 0;
+  min-width: 700px; justify-content: center;
+}
+.arch-module {
+  background: #0a1628; border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 18px; min-width: 130px; text-align: center;
+  position: relative; transition: border-color 0.2s, transform 0.2s;
+}
+.arch-module:hover { border-color: var(--green); transform: translateY(-2px); }
+.arch-module .num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--green); margin-bottom: 8px; }
+.arch-module .name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
+.arch-module .tech { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.arch-module.gpu { border-color: rgba(118,185,0,0.3); background: rgba(118,185,0,0.04); }
+.arch-arrow {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 0 8px; flex-shrink: 0;
+}
+.arch-arrow .stream { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--accent); white-space: nowrap; }
+.arch-arrow .line { width: 40px; height: 1px; background: linear-gradient(90deg, var(--border), var(--accent), var(--border)); position: relative; }
+.arch-arrow .line::after { content:'›'; position:absolute; right:-4px; top:-9px; color:var(--accent); font-size:14px; }
+.fb-bar {
+  margin-top: 28px; background: rgba(0,198,255,0.04); border: 1px solid rgba(0,198,255,0.2);
+  border-radius: 10px; padding: 14px 20px; text-align: center;
+}
+.fb-bar .fb-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 1px; }
+.fb-bar .fb-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── Steps ── */
+.steps { display: grid; gap: 16px; }
+.step {
+  display: grid; grid-template-columns: 52px 1fr; gap: 20px; align-items: start;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; transition: border-color 0.2s;
+}
+.step:hover { border-color: var(--green); }
+.step-num { width: 52px; height: 52px; border-radius: 10px; background: rgba(118,185,0,0.1); border: 1px solid rgba(118,185,0,0.2); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--green); flex-shrink: 0; }
+.step h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.step p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.step code { font-family: 'DM Mono', monospace; font-size: 12px; background: #060910; border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; display: block; margin-top: 10px; color: var(--green); overflow-x: auto; white-space: pre; }
+
+/* ── Modules grid ── */
+.modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.mod-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; transition: all 0.2s;
+}
+.mod-card:hover { border-color: var(--green); transform: translateY(-2px); }
+.mod-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--green); margin-bottom: 12px; }
+.mod-card h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.mod-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-family: 'DM Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(118,185,0,0.08); border: 1px solid rgba(118,185,0,0.2); color: var(--green); }
+.tag.blue { background: rgba(0,198,255,0.08); border-color: rgba(0,198,255,0.2); color: var(--accent); }
+
+/* ── CTA ── */
+.cta-section {
+  position: relative; z-index: 1;
+  background: linear-gradient(135deg, rgba(118,185,0,0.06), rgba(0,198,255,0.04));
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  padding: 80px 48px; text-align: center;
+}
+.cta-section h2 { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 16px; }
+.cta-section p { font-size: 16px; color: var(--muted); margin-bottom: 32px; }
+
+/* ── Footer ── */
+footer {
+  position: relative; z-index: 1;
+  padding: 32px 48px; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  font-size: 13px; color: var(--muted);
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--green); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 768px) {
+  nav { padding: 14px 20px; }
+  .nav-links { display: none; }
+  section { padding: 64px 20px; }
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .stat { border-right: none; border-bottom: 1px solid var(--border); }
+  footer { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">
+    <span class="nvidia-tag">NVIDIA</span>
+    <span class="nav-title">Fraud Detection NIM</span>
+  </div>
+  <div class="nav-links">
+    <a href="#architecture">Architecture</a>
+    <a href="#modules">Modules</a>
+    <a href="#quickstart">Quick Start</a>
+  </div>
+  <a class="nav-cta" href="https://github.com/HimJoe/fraud-detection-nim" target="_blank">View on GitHub →</a>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">
+    <span class="dot-live"></span>
+    Built on NVIDIA Financial Fraud Detection Blueprint
+  </div>
+  <h1 class="hero-title">
+    <span class="line1">Financial Fraud</span>
+    <span class="line2">Detection NIM</span>
+  </h1>
+  <p class="hero-sub">
+    A production-ready, GPU-accelerated fraud detection pipeline powered by NVIDIA Triton,
+    RAPIDS cuDF, and GNN + XGBoost inference — deployed on L40S Kubernetes nodes.
+  </p>
+  <div class="hero-buttons">
+    <a class="btn-primary" href="https://github.com/HimJoe/fraud-detection-nim" target="_blank">Clone the Repo</a>
+    <a class="btn-secondary" href="#quickstart">Quick Start Guide</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat"><div class="n">4</div><div class="l">Pipeline Modules</div></div>
+  <div class="stat"><div class="n">L40S</div><div class="l">GPU Target Node</div></div>
+  <div class="stat"><div class="n">5,000+</div><div class="l">TX/sec Stress Mode</div></div>
+  <div class="stat"><div class="n">$175</div><div class="l">Avg Fraud Loss Blocked</div></div>
+  <div class="stat"><div class="n">&lt;5ms</div><div class="l">Inference Latency</div></div>
+</div>
+
+<!-- Architecture -->
+<section id="architecture">
+  <div class="section-label">System Design</div>
+  <h2>Feature Bus Architecture</h2>
+  <p class="section-sub">All modules communicate exclusively via Redis Streams — the Feature Bus. No direct module-to-module calls. Ever.</p>
+
+  <div class="arch-diagram">
+    <div class="arch-flow">
+      <div class="arch-module">
+        <div class="num">MODULE 01</div>
+        <div class="name">Generator</div>
+        <div class="tech">Faker + Kaggle seed</div>
+      </div>
+      <div class="arch-arrow">
+        <div class="stream">cpu_tx</div>
+        <div class="line"></div>
+        <div class="stream">gpu_tx</div>
+      </div>
+      <div class="arch-module">
+        <div class="num">MODULE 02</div>
+        <div class="name">Data Prep</div>
+        <div class="tech">cuDF / pandas</div>
+      </div>
+      <div class="arch-arrow">
+        <div class="stream">cpu_features</div>
+        <div class="line"></div>
+      </div>
+      <div class="arch-module gpu">
+        <div class="num">MODULE 03</div>
+        <div class="name">Inference</div>
+        <div class="tech">Triton · GNN · XGBoost</div>
+      </div>
+      <div class="arch-arrow">
+        <div class="stream">*_scores</div>
+        <div class="line"></div>
+      </div>
+      <div class="arch-module">
+        <div class="num">MODULE 04</div>
+        <div class="name">Dashboard</div>
+        <div class="tech">FastAPI · React · WS</div>
+      </div>
+    </div>
+    <div class="fb-bar">
+      <div class="fb-label">⚡ Feature Bus — Redis Streams</div>
+      <div class="fb-sub">cpu_tx &nbsp;·&nbsp; gpu_tx &nbsp;·&nbsp; cpu_features &nbsp;·&nbsp; cpu_scores &nbsp;·&nbsp; gpu_scores &nbsp;·&nbsp; metrics</div>
+    </div>
+  </div>
+</section>
+
+<!-- Modules -->
+<section id="modules" style="padding-top:0">
+  <div class="section-label">Pipeline</div>
+  <h2>Four Modules</h2>
+  <p class="section-sub">Each module is an independent Docker container. Build, deploy, and scale them individually.</p>
+  <div class="modules-grid">
+    <div class="mod-card">
+      <div class="mod-num">01 / GENERATOR</div>
+      <h3>Transaction Generator</h3>
+      <p>Loads the Kaggle credit card fraud dataset as a statistical seed. Uses Faker to synthesise realistic cardholders, merchants, and transactions at configurable rates.</p>
+      <div class="tags"><span class="tag">Faker</span><span class="tag">NumPy</span><span class="tag">Kaggle CSV</span><span class="tag">Stress Mode</span></div>
+    </div>
+    <div class="mod-card">
+      <div class="mod-num">02 / DATA PREP</div>
+      <h3>Feature Engineering</h3>
+      <p>Reads raw transactions and applies 10+ engineered features: rolling velocity, merchant risk scores, haversine distance, time-of-day features. GPU-accelerated with cuDF.</p>
+      <div class="tags"><span class="tag">cuDF</span><span class="tag">pandas fallback</span><span class="tag">RAPIDS</span><span class="tag blue">GPU</span></div>
+    </div>
+    <div class="mod-card">
+      <div class="mod-num">03 / INFERENCE</div>
+      <h3>Fraud Scoring</h3>
+      <p>Dual pipeline: CPU features path and direct GPU path. Calls NVIDIA Triton for GNN + XGBoost ensemble scoring with Shapley explainability. Falls back to local scorer in dev.</p>
+      <div class="tags"><span class="tag">Triton gRPC</span><span class="tag">XGBoost</span><span class="tag">GNN</span><span class="tag blue">L40S</span></div>
+    </div>
+    <div class="mod-card">
+      <div class="mod-num">04 / DASHBOARD</div>
+      <h3>Live Dashboard</h3>
+      <p>Real-time metrics via WebSocket. Shows $$ saved, TPS, latency charts, Feature Bus depth, pipeline comparison, and a stress test button that spikes TX load via pub/sub.</p>
+      <div class="tags"><span class="tag">FastAPI</span><span class="tag">WebSocket</span><span class="tag">React</span><span class="tag">Canvas charts</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Start -->
+<section id="quickstart" style="padding-top:0">
+  <div class="section-label">Get Started</div>
+  <h2>Run in 3 Steps</h2>
+  <p class="section-sub">Works on any Mac, Windows, or Linux machine with Docker Desktop. No GPU required for local development.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <h3>Clone the repository</h3>
+        <p>Pull the project from GitHub onto your machine.</p>
+        <code>git clone https://github.com/HimJoe/fraud-detection-nim
+cd fraud-detection-nim</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <h3>Start the stack</h3>
+        <p>Docker Compose spins up all 4 modules plus Redis. CPU-only, no GPU needed locally.</p>
+        <code>cp .env.example .env
+docker compose up --build</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <h3>Open the dashboard</h3>
+        <p>Live transactions, fraud scores, and metrics — updating in real time. Hit the ⚡ Stress Test button to push the system.</p>
+        <code>http://localhost:8080</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">★</div>
+      <div>
+        <h3>Deploy to L40S cluster (lab VM)</h3>
+        <p>Build GPU images and deploy to Kubernetes with a single script. Requires access to the lab VM and local registry.</p>
+        <code>./scripts/build-push.sh registry.local:5000 v1.0.0
+./scripts/deploy.sh registry.local:5000 v1.0.0</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Ready to explore?</h2>
+  <p>Clone the repo, run Docker Compose, and see fraud detection in action in under 5 minutes.</p>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+    <a class="btn-primary" href="https://github.com/HimJoe/fraud-detection-nim" target="_blank">View on GitHub →</a>
+    <a class="btn-secondary" href="https://build.nvidia.com/nvidia/financial-fraud-detection" target="_blank" style="color:var(--text);border:1px solid var(--border);padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">NVIDIA Blueprint ↗</a>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div>Built on <a href="https://build.nvidia.com/nvidia/financial-fraud-detection" target="_blank">NVIDIA Financial Fraud Detection Blueprint</a></div>
+  <div><a href="https://github.com/HimJoe/fraud-detection-nim" target="_blank">github.com/HimJoe/fraud-detection-nim</a></div>
+</footer>
+
+</body>
+</html>
