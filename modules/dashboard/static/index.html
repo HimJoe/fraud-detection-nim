@@ -3,251 +3,400 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fraud Detection NIM — Dashboard</title>
+<title>Fraud Detection NIM — Feature Bus Dashboard</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0e1a; color: #e5e7eb; font-family: 'Segoe UI', system-ui, sans-serif; }
-header { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:#111827; border-bottom:1px solid #1f2937; position:sticky; top:0; z-index:100; }
-.nvidia { background:#76b900; color:#000; font-weight:800; padding:3px 8px; border-radius:4px; font-size:12px; }
-h1 { font-size:15px; font-weight:600; margin-left:10px; }
-.logo { display:flex; align-items:center; }
-.status { display:flex; align-items:center; gap:8px; font-size:13px; color:#6b7280; }
-.dot { width:8px; height:8px; border-radius:50%; background:#76b900; }
-.dot.off { background:#ef4444; }
+body { background: #060910; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+/* ── Grid background ── */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image: linear-gradient(rgba(118,185,0,0.03) 1px,transparent 1px),
+                    linear-gradient(90deg,rgba(118,185,0,0.03) 1px,transparent 1px);
+  background-size: 48px 48px;
+}
+
+header {
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 24px; background:rgba(6,9,16,0.92); backdrop-filter:blur(10px);
+  border-bottom:1px solid #1a2540;
+}
+.logo { display:flex; align-items:center; gap:10px; }
+.nvidia { background:#76b900; color:#000; font-weight:800; padding:3px 8px; border-radius:3px; font-size:11px; letter-spacing:1px; }
+h1 { font-size:14px; font-weight:700; }
+.hstatus { display:flex; align-items:center; gap:12px; font-size:12px; color:#64748b; }
+.dot { width:7px; height:7px; border-radius:50%; background:#ef4444; }
+.dot.live { background:#76b900; animation:pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.dot.live { animation:pulse 2s infinite; }
-main { padding:20px 24px; max-width:1400px; margin:0 auto; display:grid; gap:16px; }
-.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
-.kpi { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:18px 20px; }
-.kpi.green { border-color:#76b900; }
-.kpi.red { border-color:#ef4444; }
-.kpi label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px; }
-.kpi .val { font-size:26px; font-weight:700; }
-.kpi .sub { font-size:12px; color:#6b7280; margin-top:4px; }
+.stress-pill { background:rgba(255,59,59,0.15); border:1px solid #ff3b3b; color:#ff3b3b; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; display:none; animation:pulse 1s infinite; }
+.stress-pill.show { display:inline; }
+
+main { position:relative; z-index:1; padding:18px 24px; max-width:1400px; margin:0 auto; display:grid; gap:14px; }
+
+/* ── Feature Bus Hero ── */
+.fb-hero {
+  background: linear-gradient(135deg, rgba(0,198,255,0.06), rgba(118,185,0,0.04));
+  border: 1px solid rgba(0,198,255,0.25);
+  border-radius:14px; padding:20px 24px;
+}
+.fb-hero-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+.fb-title { display:flex; align-items:center; gap:10px; }
+.fb-badge { background:rgba(0,198,255,0.15); border:1px solid rgba(0,198,255,0.3); color:#00c6ff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:4px; letter-spacing:1px; font-family:monospace; }
+.fb-hero h2 { font-size:15px; font-weight:700; color:#00c6ff; }
+.fb-tagline { font-size:12px; color:#64748b; max-width:500px; }
+.fb-stats { display:flex; gap:24px; flex-wrap:wrap; }
+.fb-stat { text-align:center; }
+.fb-stat .v { font-size:22px; font-weight:700; color:#00c6ff; }
+.fb-stat .l { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ── FB Flow diagram ── */
+.fb-flow {
+  display:flex; align-items:center; gap:0; overflow-x:auto;
+  padding:14px 0 4px; justify-content:center; flex-wrap:nowrap;
+}
+.fb-node {
+  background:#0a1628; border:1px solid #1a2540; border-radius:10px;
+  padding:10px 14px; text-align:center; min-width:100px; flex-shrink:0;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.fb-node.active { border-color:#76b900; box-shadow:0 0 12px rgba(118,185,0,0.2); }
+.fb-node.accent { border-color:rgba(0,198,255,0.4); }
+.fb-node .nn { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.fb-node .nm { font-size:12px; font-weight:700; color:#e2e8f0; }
+.fb-node .nt { font-size:10px; color:#64748b; margin-top:2px; }
+.fb-node .nd { font-size:14px; font-weight:700; color:#00c6ff; margin-top:4px; }
+.fb-arrow { display:flex; flex-direction:column; align-items:center; padding:0 4px; flex-shrink:0; }
+.fb-arrow .sl { font-size:9px; color:#76b900; font-family:monospace; white-space:nowrap; margin-bottom:2px; }
+.fb-arrow .al { width:36px; height:1px; background:linear-gradient(90deg,#1a2540,#76b900); position:relative; }
+.fb-arrow .al::after { content:'›'; position:absolute; right:-5px; top:-9px; color:#76b900; font-size:13px; }
+
+/* ── Stream grid ── */
+.stream-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-top:12px; }
+.stream-card {
+  background:#0a1628; border:1px solid #1a2540; border-radius:8px; padding:10px 12px;
+  transition:border-color 0.3s;
+}
+.stream-card.has-data { border-color:rgba(118,185,0,0.3); }
+.sc-name { font-size:9px; color:#76b900; font-family:monospace; font-weight:700; margin-bottom:4px; }
+.sc-len { font-size:18px; font-weight:700; }
+.sc-sub { font-size:10px; color:#64748b; margin-top:1px; }
+.sc-bar { height:3px; border-radius:2px; background:#1a2540; margin-top:6px; overflow:hidden; }
+.sc-fill { height:100%; border-radius:2px; transition:width 0.8s; background:#76b900; }
+
+/* ── KPI row ── */
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+.kpi { background:#0d1220; border:1px solid #1a2540; border-radius:10px; padding:16px 18px; }
+.kpi.green { border-color:#76b900; box-shadow:0 0 14px rgba(118,185,0,0.08); }
+.kpi.red   { border-color:#ef4444; box-shadow:0 0 14px rgba(239,68,68,0.08); }
+.kpi label { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px; }
+.kpi .val  { font-size:24px; font-weight:700; }
+.kpi .sub  { font-size:11px; color:#64748b; margin-top:3px; }
 .g{color:#76b900} .r{color:#ef4444} .b{color:#00c6ff}
-.biz { background:linear-gradient(135deg,rgba(118,185,0,0.08),rgba(0,198,255,0.05)); border:1px solid #76b900; border-radius:10px; padding:20px 24px; }
-.biz h3 { color:#76b900; font-size:14px; font-weight:700; margin-bottom:14px; }
-.biz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
-.biz-stat label { font-size:11px; color:#6b7280; text-transform:uppercase; display:block; }
-.biz-stat .v { font-size:22px; font-weight:700; color:#76b900; }
-.charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:18px 20px; }
-.card h3 { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
-.pipelines { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.pipe { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:16px 18px; }
-.pipe h4 { font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:12px; }
-.badge { display:inline-block; padding:2px 6px; border-radius:3px; font-size:11px; font-weight:700; margin-left:6px; }
+
+/* ── Biz panel ── */
+.biz { background:linear-gradient(135deg,rgba(118,185,0,0.06),rgba(0,198,255,0.03)); border:1px solid rgba(118,185,0,0.25); border-radius:10px; padding:18px 22px; }
+.biz h3 { color:#76b900; font-size:13px; font-weight:700; margin-bottom:12px; }
+.biz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.biz-stat label { font-size:10px; color:#64748b; text-transform:uppercase; display:block; }
+.biz-stat .v { font-size:20px; font-weight:700; color:#76b900; }
+
+/* ── Charts ── */
+.charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.card { background:#0d1220; border:1px solid #1a2540; border-radius:10px; padding:16px 18px; }
+.card h3 { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+.legend { display:flex; gap:14px; margin-top:6px; font-size:10px; color:#64748b; }
+
+/* ── Pipelines ── */
+.pipelines { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.pipe { background:#0d1220; border:1px solid #1a2540; border-radius:10px; padding:14px 16px; }
+.pipe h4 { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:10px; }
+.badge { display:inline-block; padding:2px 6px; border-radius:3px; font-size:10px; font-weight:700; margin-left:5px; }
 .bg{background:rgba(118,185,0,0.2);color:#76b900} .bc{background:rgba(0,198,255,0.2);color:#00c6ff}
-.mrow { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #1f2937; font-size:13px; }
-.mrow:last-child{border:none} .mrow .lbl{color:#6b7280} .mrow .mv{font-weight:600}
-.fb-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
-.fb-stream { background:#0d1424; border:1px solid #1f2937; border-radius:8px; padding:12px; }
-.sname{font-size:10px;color:#76b900;font-family:monospace;font-weight:700;margin-bottom:6px}
-.slen{font-size:20px;font-weight:700} .ssub{font-size:11px;color:#6b7280;margin-top:2px}
-.bar{height:5px;border-radius:3px;background:#1f2937;margin-top:6px;overflow:hidden}
-.fill{height:100%;border-radius:3px;transition:width 0.5s}
-.stress-section{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.btn{padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none}
-.btn-on{background:#ff3b3b;color:white;box-shadow:0 0 20px rgba(255,59,59,0.4)}
-.btn-off{background:#76b900;color:#000;box-shadow:0 0 20px rgba(118,185,0,0.4)}
-.stress-info{font-size:13px;color:#6b7280;max-width:400px}
-.banner{background:rgba(255,59,59,0.1);border:1px solid #ff3b3b;border-radius:8px;padding:10px 16px;font-size:13px;color:#ff3b3b;font-weight:600;display:none}
-.banner.show{display:block}
-.legend{display:flex;gap:16px;margin-top:8px;font-size:11px;color:#6b7280}
-.connecting{display:flex;align-items:center;justify-content:center;height:60vh;font-size:18px;color:#6b7280}
+.mrow { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #1a2540; font-size:12px; }
+.mrow:last-child{border:none} .mrow .lbl{color:#64748b} .mrow .mv{font-weight:600}
+
+/* ── Stress ── */
+.stress-section { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.btn { padding:11px 24px; border-radius:7px; font-size:13px; font-weight:700; cursor:pointer; border:none; }
+.btn-on  { background:#ff3b3b; color:white; box-shadow:0 0 16px rgba(255,59,59,0.35); }
+.btn-off { background:#76b900; color:#000; box-shadow:0 0 16px rgba(118,185,0,0.35); }
+.stress-info { font-size:12px; color:#64748b; max-width:420px; line-height:1.5; }
+.banner { background:rgba(255,59,59,0.08); border:1px solid #ff3b3b; border-radius:7px; padding:8px 14px; font-size:12px; color:#ff3b3b; font-weight:600; display:none; }
+.banner.show { display:block; }
+
+.connecting { display:flex; align-items:center; justify-content:center; height:60vh; font-size:16px; color:#64748b; flex-direction:column; gap:12px; }
+.spin { width:32px; height:32px; border:3px solid #1a2540; border-top-color:#76b900; border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+@media(max-width:800px){ .charts,.pipelines{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
 <header>
   <div class="logo">
     <span class="nvidia">NVIDIA</span>
-    <h1>Financial Fraud Detection NIM — Live Dashboard</h1>
+    <h1>Financial Fraud Detection NIM</h1>
   </div>
-  <div class="status">
-    <div class="dot off" id="dot"></div>
+  <div class="hstatus">
+    <div class="dot" id="dot"></div>
     <span id="conn-txt">Connecting...</span>
-    <span id="stress-hdr" style="color:#ff3b3b;font-weight:700;display:none">⚡ STRESS ACTIVE</span>
+    <span class="stress-pill" id="stress-pill">⚡ STRESS MODE</span>
   </div>
 </header>
-<main id="app"><div class="connecting">⏳ Connecting to Feature Bus...</div></main>
+
+<main id="app">
+  <div class="connecting">
+    <div class="spin"></div>
+    Connecting to Feature Bus...
+  </div>
+</main>
 
 <script>
 const $ = id => document.getElementById(id);
-const fmt$ = n => '$' + Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmt$ = n => '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
 const fmtN = n => Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
-const fmtMs = n => Number(n) < 1 ? '<1ms' : Number(n).toFixed(1)+'ms';
+const fmtMs = n => Number(n)<1?'<1ms':Number(n).toFixed(1)+'ms';
+const pct = (v,max) => Math.min(100,(v/max)*100).toFixed(1);
 
-// Simple sparkline using canvas
-function Sparkline(canvasId, colors) {
+// ── Sparkline ────────────────────────────────────────────────────────────────
+function Sparkline(canvasId, colors, maxPts=60) {
   this.canvas = $(canvasId);
   this.ctx = this.canvas.getContext('2d');
   this.colors = colors;
-  this.series = colors.map(() => []);
-  this.max = 60;
+  this.series = colors.map(()=>[]);
   this.push = function(vals) {
-    vals.forEach((v,i) => {
-      this.series[i].push(v);
-      if (this.series[i].length > this.max) this.series[i].shift();
-    });
+    vals.forEach((v,i)=>{ this.series[i].push(v); if(this.series[i].length>maxPts) this.series[i].shift(); });
     this.draw();
   };
   this.draw = function() {
-    const c = this.ctx, w = this.canvas.width, h = this.canvas.height;
+    const c=this.ctx, w=this.canvas.width, h=this.canvas.height;
     c.clearRect(0,0,w,h);
-    const allVals = this.series.flat();
-    const peak = Math.max(...allVals, 1);
-    // grid
-    c.strokeStyle = '#1f2937'; c.lineWidth = 1;
-    [0.25,0.5,0.75].forEach(f => { c.beginPath(); c.moveTo(0,h*f); c.lineTo(w,h*f); c.stroke(); });
-    this.series.forEach((data, si) => {
-      if (data.length < 2) return;
-      c.beginPath(); c.strokeStyle = this.colors[si]; c.lineWidth = 2;
-      data.forEach((v,i) => {
-        const x = (i/(this.max-1))*w, y = h - (v/peak)*(h-4) - 2;
-        i===0 ? c.moveTo(x,y) : c.lineTo(x,y);
-      });
+    const peak = Math.max(...this.series.flat(),1);
+    c.strokeStyle='#1a2540'; c.lineWidth=1;
+    [0.25,0.5,0.75].forEach(f=>{c.beginPath();c.moveTo(0,h*f);c.lineTo(w,h*f);c.stroke();});
+    this.series.forEach((data,si)=>{
+      if(data.length<2) return;
+      c.beginPath(); c.strokeStyle=this.colors[si]; c.lineWidth=2;
+      data.forEach((v,i)=>{ const x=(i/(maxPts-1))*w, y=h-(v/peak)*(h-4)-2; i===0?c.moveTo(x,y):c.lineTo(x,y); });
       c.stroke();
     });
   };
 }
 
-let spkTps, spkLat, uiBuilt = false;
+let spkTps, spkLat, uiBuilt=false;
+
+// Stream display config — order matches FB flow
+const STREAM_META = {
+  'cpu_tx':       { label:'cpu_tx',       color:'#76b900', maxScale:5000 },
+  'gpu_tx':       { label:'gpu_tx',       color:'#76b900', maxScale:5000 },
+  'cpu_features': { label:'cpu_features', color:'#00c6ff', maxScale:5000 },
+  'cpu_pending':  { label:'cpu_pending',  color:'#f59e0b', maxScale:2000 },
+  'gpu_pending':  { label:'gpu_pending',  color:'#f59e0b', maxScale:2000 },
+  'cpu_scores':   { label:'cpu_scores',   color:'#a78bfa', maxScale:5000 },
+  'gpu_scores':   { label:'gpu_scores',   color:'#a78bfa', maxScale:5000 },
+  'metrics':      { label:'metrics',      color:'#94a3b8', maxScale:1000 },
+};
 
 function buildUI() {
   $('app').innerHTML = `
-    <div class="kpi-row">
-      <div class="kpi green"><label>💰 Est. $ Saved</label><div class="val g" id="k-saved">$0</div><div class="sub" id="k-fc">0 fraud txns caught</div></div>
-      <div class="kpi"><label>Total Transactions</label><div class="val" id="k-total">0</div><div class="sub" id="k-gtps">Gen TPS: 0</div></div>
-      <div class="kpi red"><label>Fraud Value Blocked</label><div class="val r" id="k-fval">$0</div><div class="sub">Total flagged value</div></div>
-      <div class="kpi"><label>CPU Inference TPS</label><div class="val b" id="k-ctps">0</div><div class="sub" id="k-clat">Latency: —</div></div>
-      <div class="kpi"><label>GPU Inference TPS</label><div class="val g" id="k-gtps2">0</div><div class="sub" id="k-glat">Latency: —</div></div>
-      <div class="kpi"><label>Feature Bus Depth</label><div class="val" id="k-fb">0</div><div class="sub">msgs queued</div></div>
+    <!-- Feature Bus Hero -->
+    <div class="fb-hero">
+      <div class="fb-hero-top">
+        <div class="fb-title">
+          <span class="fb-badge">FEATURE BUS</span>
+          <h2>Redis Streams — The Core Value Proposition</h2>
+        </div>
+        <div class="fb-stats">
+          <div class="fb-stat"><div class="v" id="fb-wps">0</div><div class="l">writes / sec</div></div>
+          <div class="fb-stat"><div class="v" id="fb-total">0</div><div class="l">total writes</div></div>
+          <div class="fb-stat"><div class="v" id="fb-streams">0</div><div class="l">active streams</div></div>
+        </div>
+      </div>
+      <div class="fb-tagline">Every transaction is written to the FB, enriched through it, scored via it, and read by the dashboard from it. No module calls another directly — ever.</div>
+
+      <!-- Flow diagram -->
+      <div class="fb-flow" style="margin-top:14px">
+        <div class="fb-node active"><div class="nn">01</div><div class="nm">Generator</div><div class="nt">Faker+Kaggle</div></div>
+        <div class="fb-arrow"><div class="sl">cpu_tx</div><div class="al"></div><div class="sl">gpu_tx</div></div>
+        <div class="fb-node"><div class="nn">02</div><div class="nm">Data Prep</div><div class="nt">cuDF/pandas</div></div>
+        <div class="fb-arrow"><div class="sl">cpu_features</div><div class="al"></div></div>
+        <div class="fb-node accent"><div class="nn">FEATURE BUS</div><div class="nm">Redis Streams</div><div class="nd" id="flow-fb-depth">0 msgs</div></div>
+        <div class="fb-arrow"><div class="al"></div><div class="sl">*_pending→scores</div></div>
+        <div class="fb-node"><div class="nn">03</div><div class="nm">Inference</div><div class="nt">Triton+XGBoost</div></div>
+        <div class="fb-arrow"><div class="sl">*_scores</div><div class="al"></div></div>
+        <div class="fb-node"><div class="nn">04</div><div class="nm">Dashboard</div><div class="nt">reads FB only</div></div>
+      </div>
+
+      <!-- Stream depth grid -->
+      <div class="stream-grid" id="stream-grid"></div>
     </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi green"><label>💰 Est. $ Saved</label><div class="val g" id="k-saved">$0</div><div class="sub" id="k-fc">0 fraud caught</div></div>
+      <div class="kpi"><label>Total Transactions</label><div class="val" id="k-total">0</div><div class="sub" id="k-gtps">Gen TPS: 0</div></div>
+      <div class="kpi red"><label>Fraud Value Blocked</label><div class="val r" id="k-fval">$0</div><div class="sub">flagged value</div></div>
+      <div class="kpi"><label>CPU Scores (from FB)</label><div class="val b" id="k-cscore">0</div><div class="sub" id="k-clat">Latency: —</div></div>
+      <div class="kpi"><label>GPU Scores (from FB)</label><div class="val g" id="k-gscore">0</div><div class="sub" id="k-glat">Latency: —</div></div>
+    </div>
+
+    <!-- Biz -->
     <div class="biz">
       <h3>📊 Business Impact — Financial Services ROI</h3>
       <div class="biz-grid">
         <div class="biz-stat"><label>Fraud Blocked</label><div class="v" id="b-saved">$0</div></div>
         <div class="biz-stat"><label>Fraud Caught</label><div class="v" id="b-cnt">0</div></div>
         <div class="biz-stat"><label>Avg Latency</label><div class="v" id="b-lat">—</div></div>
+        <div class="biz-stat"><label>FB Throughput</label><div class="v b" id="b-fbwps">0/s</div></div>
         <div class="biz-stat"><label>Uptime</label><div class="v" id="b-up">0m 0s</div></div>
       </div>
     </div>
+
+    <!-- Charts -->
     <div class="charts">
       <div class="card">
         <h3>Throughput TPS — 60s</h3>
-        <canvas id="c-tps" height="110"></canvas>
+        <canvas id="c-tps" height="100"></canvas>
         <div class="legend"><span style="color:#f59e0b">■ Generator</span><span style="color:#76b900">■ GPU</span><span style="color:#00c6ff">■ CPU</span></div>
       </div>
       <div class="card">
         <h3>Latency ms — 60s</h3>
-        <canvas id="c-lat" height="110"></canvas>
+        <canvas id="c-lat" height="100"></canvas>
         <div class="legend"><span style="color:#76b900">■ GPU</span><span style="color:#00c6ff">■ CPU</span></div>
       </div>
     </div>
+
+    <!-- Pipelines -->
     <div class="pipelines">
       <div class="pipe"><h4>GPU Pipeline <span class="badge bg">L40S</span></h4>
         <div class="mrow"><span class="lbl">TPS</span><span class="mv" id="p-gtps">0</span></div>
         <div class="mrow"><span class="lbl">Latency</span><span class="mv" id="p-glat">—</span></div>
-        <div class="mrow"><span class="lbl">Fraud Blocked</span><span class="mv" id="p-gfr">$0</span></div>
-        <div class="mrow"><span class="lbl">Stream Depth</span><span class="mv" id="p-gfb">0</span></div>
+        <div class="mrow"><span class="lbl">Scores read from FB</span><span class="mv g" id="p-gscore">0</span></div>
+        <div class="mrow"><span class="lbl">gpu_tx depth</span><span class="mv" id="p-gtx">0</span></div>
+        <div class="mrow"><span class="lbl">gpu_pending depth</span><span class="mv" id="p-gpend">0</span></div>
+        <div class="mrow"><span class="lbl">gpu_scores depth</span><span class="mv" id="p-gscores">0</span></div>
       </div>
       <div class="pipe"><h4>CPU Pipeline <span class="badge bc">x86</span></h4>
         <div class="mrow"><span class="lbl">Data Prep TPS</span><span class="mv" id="p-dptps">0</span></div>
-        <div class="mrow"><span class="lbl">Prep Latency</span><span class="mv" id="p-dplat">—</span></div>
         <div class="mrow"><span class="lbl">Inference TPS</span><span class="mv" id="p-ctps">0</span></div>
-        <div class="mrow"><span class="lbl">Inference Latency</span><span class="mv" id="p-clat">—</span></div>
+        <div class="mrow"><span class="lbl">Scores read from FB</span><span class="mv b" id="p-cscore">0</span></div>
+        <div class="mrow"><span class="lbl">cpu_features depth</span><span class="mv" id="p-cfeat">0</span></div>
+        <div class="mrow"><span class="lbl">cpu_pending depth</span><span class="mv" id="p-cpend">0</span></div>
+        <div class="mrow"><span class="lbl">cpu_scores depth</span><span class="mv" id="p-cscores">0</span></div>
       </div>
     </div>
+
+    <!-- Stress -->
     <div class="card">
-      <h3>Feature Bus — Stream Utilisation</h3>
-      <div class="fb-grid" id="fb-grid"></div>
-    </div>
-    <div class="card">
-      <h3>⚡ Stress Test</h3>
+      <h3>⚡ Stress Test — Feature Bus Load</h3>
       <div class="stress-section">
         <button class="btn btn-on" id="s-btn" onclick="toggleStress()">⚡ ENABLE STRESS TEST</button>
-        <div class="banner" id="s-banner">🔴 STRESS MODE ACTIVE — TX rate at maximum</div>
-        <div class="stress-info"><strong>Stress test</strong> bumps TX rate to maximum via Redis pub/sub. Watch latency stay stable while TPS spikes on L40S.</div>
+        <div class="banner" id="s-banner">🔴 STRESS MODE ACTIVE — watch FB writes/sec spike</div>
+        <div class="stress-info">Stress mode pumps TX rate to maximum via Redis pub/sub control channel — itself part of the Feature Bus. Watch the stream depths and writes/sec surge while latency holds stable on L40S.</div>
       </div>
     </div>`;
 
-  // Init charts after DOM ready
-  setTimeout(() => {
-    const tc = $('c-tps'), lc = $('c-lat');
-    tc.width = tc.parentElement.clientWidth - 36;
-    lc.width = lc.parentElement.clientWidth - 36;
-    spkTps = new Sparkline('c-tps', ['#f59e0b','#76b900','#00c6ff']);
-    spkLat = new Sparkline('c-lat', ['#76b900','#00c6ff']);
-  }, 50);
+  setTimeout(()=>{
+    const tc=$('c-tps'), lc=$('c-lat');
+    tc.width=tc.parentElement.clientWidth-36;
+    lc.width=lc.parentElement.clientWidth-36;
+    spkTps=new Sparkline('c-tps',['#f59e0b','#76b900','#00c6ff']);
+    spkLat=new Sparkline('c-lat',['#76b900','#00c6ff']);
+  },50);
 }
 
 function update(d) {
   const fb = d.fb_stream_lengths || {};
   const fbTotal = Object.values(fb).reduce((a,b)=>a+b,0);
+  const activeStreams = Object.values(fb).filter(v=>v>0).length;
 
-  $('k-saved').textContent = fmt$(d.dollars_saved);
-  $('k-fc').textContent    = fmtN(d.total_fraud_count)+' fraud txns caught';
-  $('k-total').textContent = fmtN(d.total_tx);
-  $('k-gtps').textContent  = 'Gen TPS: '+d.generator_tps.toFixed(0);
-  $('k-fval').textContent  = fmt$(d.total_fraud_value);
-  $('k-ctps').textContent  = d.cpu_tps.toFixed(0);
-  $('k-clat').textContent  = 'Latency: '+fmtMs(d.cpu_latency_ms);
-  $('k-gtps2').textContent = d.gpu_tps.toFixed(0);
-  $('k-glat').textContent  = 'Latency: '+fmtMs(d.gpu_latency_ms);
-  $('k-fb').textContent    = fmtN(fbTotal);
+  // FB hero
+  $('fb-wps').textContent    = fmtN(d.fb_writes_per_sec||0);
+  $('fb-total').textContent  = fmtN(d.fb_total_writes||0);
+  $('fb-streams').textContent = activeStreams;
+  $('flow-fb-depth').textContent = fmtN(fbTotal)+' msgs';
 
-  $('b-saved').textContent = fmt$(d.dollars_saved);
-  $('b-cnt').textContent   = fmtN(d.total_fraud_count);
-  $('b-lat').textContent   = fmtMs((d.cpu_latency_ms+d.gpu_latency_ms)/2);
-  const up = d.uptime_seconds||0;
-  $('b-up').textContent    = Math.floor(up/60)+'m '+(up%60).toFixed(0)+'s';
+  // Stream grid
+  const grid=$('stream-grid');
+  if(grid) {
+    grid.innerHTML = Object.entries(STREAM_META).map(([name, meta])=>{
+      const len = fb[name]||0;
+      const fillPct = Math.min(100,(len/meta.maxScale)*100).toFixed(1);
+      return `<div class="stream-card ${len>0?'has-data':''}">
+        <div class="sc-name">${name}</div>
+        <div class="sc-len" style="color:${meta.color}">${fmtN(len)}</div>
+        <div class="sc-sub">msgs queued</div>
+        <div class="sc-bar"><div class="sc-fill" style="width:${fillPct}%;background:${meta.color}"></div></div>
+      </div>`;
+    }).join('');
+  }
 
-  $('p-gtps').textContent  = d.gpu_tps.toFixed(1);
-  $('p-glat').textContent  = fmtMs(d.gpu_latency_ms);
-  $('p-gfr').textContent   = fmt$(d.total_fraud_value*0.5);
-  $('p-gfb').textContent   = fmtN(fb.gpu_tx||0)+' / '+fmtN(fb.gpu_scores||0);
-  $('p-dptps').textContent = d.dataprep_tps.toFixed(1);
-  $('p-dplat').textContent = fmtMs(d.dataprep_latency_ms);
-  $('p-ctps').textContent  = d.cpu_tps.toFixed(1);
-  $('p-clat').textContent  = fmtMs(d.cpu_latency_ms);
+  // KPIs
+  $('k-saved').textContent   = fmt$(d.dollars_saved);
+  $('k-fc').textContent      = fmtN(d.total_fraud_count)+' fraud caught';
+  $('k-total').textContent   = fmtN(d.total_tx);
+  $('k-gtps').textContent    = 'Gen TPS: '+d.generator_tps.toFixed(0);
+  $('k-fval').textContent    = fmt$(d.total_fraud_value);
+  $('k-cscore').textContent  = fmtN(d.cpu_scores_direct||0);
+  $('k-clat').textContent    = 'Latency: '+fmtMs(d.cpu_latency_ms);
+  $('k-gscore').textContent  = fmtN(d.gpu_scores_direct||0);
+  $('k-glat').textContent    = 'Latency: '+fmtMs(d.gpu_latency_ms);
 
-  const grid = $('fb-grid');
-  if (grid) grid.innerHTML = Object.entries(fb).map(([n,v]) =>
-    `<div class="fb-stream"><div class="sname">${n}</div><div class="slen">${fmtN(v)}</div>
-     <div class="ssub">msgs queued</div>
-     <div class="bar"><div class="fill" style="width:${Math.min(100,v/100)}%;background:${v>5000?'#f59e0b':'#76b900'}"></div></div></div>`
-  ).join('');
+  // Biz
+  $('b-saved').textContent   = fmt$(d.dollars_saved);
+  $('b-cnt').textContent     = fmtN(d.total_fraud_count);
+  $('b-lat').textContent     = fmtMs((d.cpu_latency_ms+d.gpu_latency_ms)/2);
+  $('b-fbwps').textContent   = fmtN(d.fb_writes_per_sec||0)+'/s';
+  const up=d.uptime_seconds||0;
+  $('b-up').textContent      = Math.floor(up/60)+'m '+(up%60).toFixed(0)+'s';
 
-  if (spkTps) spkTps.push([d.generator_tps, d.gpu_tps, d.cpu_tps]);
-  if (spkLat) spkLat.push([d.gpu_latency_ms, d.cpu_latency_ms]);
+  // Pipelines
+  $('p-gtps').textContent    = d.gpu_tps.toFixed(1);
+  $('p-glat').textContent    = fmtMs(d.gpu_latency_ms);
+  $('p-gscore').textContent  = fmtN(d.gpu_scores_direct||0);
+  $('p-gtx').textContent     = fmtN(fb.gpu_tx||0);
+  $('p-gpend').textContent   = fmtN(fb.gpu_pending||0);
+  $('p-gscores').textContent = fmtN(fb.gpu_scores||0);
+  $('p-dptps').textContent   = d.dataprep_tps.toFixed(1);
+  $('p-ctps').textContent    = d.cpu_tps.toFixed(1);
+  $('p-cscore').textContent  = fmtN(d.cpu_scores_direct||0);
+  $('p-cfeat').textContent   = fmtN(fb.cpu_features||0);
+  $('p-cpend').textContent   = fmtN(fb.cpu_pending||0);
+  $('p-cscores').textContent = fmtN(fb.cpu_scores||0);
 
-  const on = d.stress_mode;
-  $('s-btn').className   = 'btn '+(on?'btn-off':'btn-on');
-  $('s-btn').textContent = on?'🟢 DISABLE STRESS TEST':'⚡ ENABLE STRESS TEST';
-  $('s-banner').className = 'banner'+(on?' show':'');
-  $('stress-hdr').style.display = on?'inline':'none';
+  // Charts
+  if(spkTps) spkTps.push([d.generator_tps,d.gpu_tps,d.cpu_tps]);
+  if(spkLat) spkLat.push([d.gpu_latency_ms,d.cpu_latency_ms]);
+
+  // Stress
+  const on=d.stress_mode;
+  $('s-btn').className  ='btn '+(on?'btn-off':'btn-on');
+  $('s-btn').textContent= on?'🟢 DISABLE STRESS TEST':'⚡ ENABLE STRESS TEST';
+  $('s-banner').className='banner'+(on?' show':'');
+  $('stress-pill').className='stress-pill'+(on?' show':'');
 }
 
-let stressOn = false;
+let stressOn=false;
 async function toggleStress() {
-  stressOn = !stressOn;
+  stressOn=!stressOn;
   await fetch('/api/stress/'+(stressOn?'enable':'disable'),{method:'POST'});
 }
 
 function connect() {
-  const ws = new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws/metrics');
-  ws.onopen = () => {
-    $('dot').className = 'dot live';
-    $('conn-txt').textContent = 'Live';
-    if (!uiBuilt) { buildUI(); uiBuilt = true; }
+  const ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws/metrics');
+  ws.onopen=()=>{
+    $('dot').className='dot live';
+    $('conn-txt').textContent='Live — reading from Feature Bus';
+    if(!uiBuilt){buildUI();uiBuilt=true;}
   };
-  ws.onmessage = e => { try { update(JSON.parse(e.data)); } catch(err){} };
-  ws.onclose = () => {
-    $('dot').className = 'dot off';
-    $('conn-txt').textContent = 'Reconnecting...';
-    setTimeout(connect, 2000);
+  ws.onmessage=e=>{ try{update(JSON.parse(e.data));}catch(err){console.error(err);} };
+  ws.onclose=()=>{
+    $('dot').className='dot';
+    $('conn-txt').textContent='Reconnecting...';
+    setTimeout(connect,2000);
   };
-  ws.onerror = () => ws.close();
+  ws.onerror=()=>ws.close();
 }
 connect();
 </script>

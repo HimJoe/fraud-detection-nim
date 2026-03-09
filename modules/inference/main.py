@@ -19,7 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from shared.featurebus.client import (
     FeatureBusClient, FraudScore, Metric,
     STREAM_CPU_FEATURES, STREAM_GPU_TX,
-    STREAM_CPU_SCORES, STREAM_GPU_SCORES
+    STREAM_CPU_SCORES, STREAM_GPU_SCORES,
+    STREAM_CPU_PENDING, STREAM_GPU_PENDING
 )
 
 logging.basicConfig(level=logging.INFO,
@@ -167,7 +168,12 @@ class InferenceWorker:
             row = []
             for col in self.feature_cols:
                 val = raw.get(col, 0)
-                row.append(float(val))
+                # Redis returns everything as strings; handle booleans explicitly
+                if isinstance(val, str) and val.lower() in ("true", "false"):
+                    val = 1.0 if val.lower() == "true" else 0.0
+                else:
+                    val = float(val) if val not in (None, "") else 0.0
+                row.append(val)
             return np.array(row, dtype=np.float32), raw
         except Exception as e:
             logger.warning(f"Feature extraction error: {e}")
@@ -205,6 +211,16 @@ class InferenceWorker:
 
         if not rows:
             return
+
+        # ── Write pending marker to Feature Bus BEFORE scoring ────────────────
+        # This is the key value prop: every inference event is mediated by the FB.
+        # pending → score → write_score — no direct module-to-module calls.
+        for meta in metas:
+            self.fb.write_pending(
+                tx_id=meta.get("tx_id", ""),
+                pipeline=self.pipeline,
+                batch_size=len(rows)
+            )
 
         matrix = np.stack(rows)
         scores, latency_ms = self._score_batch(matrix)

@@ -13,13 +13,20 @@ import redis
 logger = logging.getLogger(__name__)
 
 # ─── Stream names ────────────────────────────────────────────────────────────
-STREAM_CPU_TX       = "cpu_tx"
-STREAM_GPU_TX       = "gpu_tx"
-STREAM_CPU_FEATURES = "cpu_features"
-STREAM_CPU_SCORES   = "cpu_scores"
-STREAM_GPU_SCORES   = "gpu_scores"
-STREAM_METRICS      = "metrics"
-PUBSUB_CONTROL      = "control"          # stress / config signals
+STREAM_CPU_TX           = "cpu_tx"
+STREAM_GPU_TX           = "gpu_tx"
+STREAM_CPU_FEATURES     = "cpu_features"
+STREAM_CPU_PENDING      = "cpu_pending"   # in-flight: scored but not yet written
+STREAM_GPU_PENDING      = "gpu_pending"   # in-flight: scored but not yet written
+STREAM_CPU_SCORES       = "cpu_scores"
+STREAM_GPU_SCORES       = "gpu_scores"
+STREAM_METRICS          = "metrics"
+PUBSUB_CONTROL          = "control"       # stress / config signals
+
+# Ordered list for dashboard FB flow display
+STREAM_FLOW_CPU = [STREAM_CPU_TX, STREAM_CPU_FEATURES, STREAM_CPU_PENDING, STREAM_CPU_SCORES]
+STREAM_FLOW_GPU = [STREAM_GPU_TX, STREAM_GPU_PENDING, STREAM_GPU_SCORES]
+ALL_STREAMS     = list(dict.fromkeys(STREAM_FLOW_CPU + STREAM_FLOW_GPU + [STREAM_METRICS]))
 
 # ─── Schema dataclasses ───────────────────────────────────────────────────────
 
@@ -100,6 +107,13 @@ class FeatureBusClient:
         data["is_online"] = int(data["is_online"])
         data["is_weekend"] = int(data["is_weekend"])
         self.r.xadd(STREAM_CPU_FEATURES, data, maxlen=self.maxlen, approximate=True)
+
+    def write_pending(self, tx_id: str, pipeline: str, batch_size: int = 1):
+        """Write a pending marker to the FB before scoring — proves every score touches the bus."""
+        stream = STREAM_CPU_PENDING if pipeline == "cpu" else STREAM_GPU_PENDING
+        self.r.xadd(stream, {"tx_id": tx_id, "ts": time.time(),
+                              "batch_size": batch_size, "pipeline": pipeline},
+                    maxlen=50_000, approximate=True)
 
     def write_score(self, score: FraudScore):
         stream = STREAM_CPU_SCORES if score.pipeline == "cpu" else STREAM_GPU_SCORES

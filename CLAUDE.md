@@ -37,6 +37,31 @@ Kaggle CSV seed
                                                                         └─────────────────┘
 ```
 
+## ⚡ The Feature Bus — Core Value Proposition
+
+**This is the key difference from the standard NVIDIA blueprint.**
+
+> No module ever calls another module directly. Every transaction, feature vector,
+> inference result, and metric is written to and read from the Feature Bus (Redis Streams).
+
+The full lifecycle of every transaction through the FB:
+```
+Generator  →  [cpu_tx / gpu_tx]  →  Data Prep
+Data Prep  →  [cpu_features]     →  Inference
+Inference  →  [cpu_pending]      →  (marks in-flight on FB before scoring)
+Inference  →  [cpu_scores / gpu_scores]  →  Dashboard
+Dashboard  →  reads [metrics + *_scores] from FB only — never calls Inference directly
+```
+
+Why this matters for the client demo:
+- **Decoupling** — any module can be restarted, scaled, or replaced without affecting others
+- **Observability** — every event is on the bus; stream depths show exactly where bottlenecks are
+- **Replay** — historical transactions can be replayed by re-reading from streams
+- **Auditability** — every fraud score is permanently recorded on the bus
+- **Scale** — add more inference workers by simply pointing them at the same stream
+
+The dashboard's FB hero section shows live writes/sec across all streams — this is the number to highlight in the client demo.
+
 **The Feature Bus is Redis Streams** — all inter-module communication goes through it.
 Never have modules call each other directly. Always go through the Feature Bus.
 

@@ -25,7 +25,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from shared.featurebus.client import (
     STREAM_CPU_SCORES, STREAM_GPU_SCORES, STREAM_METRICS,
     STREAM_CPU_TX, STREAM_GPU_TX, STREAM_CPU_FEATURES,
-    PUBSUB_CONTROL
+    STREAM_CPU_PENDING, STREAM_GPU_PENDING,
+    PUBSUB_CONTROL, ALL_STREAMS
 )
 
 logging.basicConfig(level=logging.INFO,
@@ -58,7 +59,14 @@ class MetricsState:
         self.generator_tps       = 0.0
         self.stress_mode         = False
         self.fb_stream_lengths   = {}
+        self.fb_total_writes     = 0      # cumulative writes across ALL streams
+        self.fb_writes_per_sec   = 0.0    # rolling FB throughput
+        self._fb_writes_last     = 0
+        self._fb_writes_ts       = time.time()
         self.last_update         = time.time()
+        # Direct score counts read from *_scores streams (not just metrics)
+        self.cpu_scores_direct   = 0
+        self.gpu_scores_direct   = 0
 
     @property
     def total_fraud_count(self):
@@ -96,6 +104,10 @@ class MetricsState:
             "gpu_latency_ms":   round(self.gpu_latency_ms, 2),
             "dataprep_latency_ms": round(self.dataprep_latency_ms, 2),
             "fb_stream_lengths": self.fb_stream_lengths,
+            "fb_total_writes":   self.fb_total_writes,
+            "fb_writes_per_sec": round(self.fb_writes_per_sec, 1),
+            "cpu_scores_direct": self.cpu_scores_direct,
+            "gpu_scores_direct": self.gpu_scores_direct,
             "uptime_seconds":   round(time.time() - self.reset_time, 0),
         }
 
@@ -148,21 +160,32 @@ async def consume_metrics(r: aioredis.Redis):
 
 
 async def poll_stream_lengths(r: aioredis.Redis):
-    """Poll Feature Bus stream lengths for FB utilisation metrics."""
-    streams = [STREAM_CPU_TX, STREAM_GPU_TX, STREAM_CPU_FEATURES,
-               STREAM_CPU_SCORES, STREAM_GPU_SCORES]
+    """Poll ALL Feature Bus stream lengths — proves everything flows through the FB."""
     while True:
         try:
             lengths = {}
-            for s in streams:
+            total = 0
+            for s in ALL_STREAMS:
                 try:
-                    lengths[s] = await r.xlen(s)
+                    l = await r.xlen(s)
+                    lengths[s] = l
+                    total += l
                 except Exception:
                     lengths[s] = 0
             state.fb_stream_lengths = lengths
+
+            # Compute FB writes/sec across all streams
+            now = time.time()
+            delta_t = now - state._fb_writes_ts
+            delta_w = total - state._fb_writes_last
+            if delta_t >= 1.0:
+                state.fb_writes_per_sec = max(0, delta_w / delta_t)
+                state.fb_total_writes  += max(0, delta_w)
+                state._fb_writes_last   = total
+                state._fb_writes_ts     = now
         except Exception as e:
             logger.warning(f"Stream poll error: {e}")
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
 
 async def broadcast_ws():
@@ -183,14 +206,48 @@ async def broadcast_ws():
 
 # ─── App lifecycle ────────────────────────────────────────────────────────────
 
+async def consume_scores(r: aioredis.Redis):
+    """
+    Read directly from cpu_scores and gpu_scores Feature Bus streams.
+    This is the value prop: dashboard reads everything from the FB,
+    never from a direct module call.
+    """
+    cpu_id = "$"
+    gpu_id = "$"
+    while True:
+        try:
+            results = await r.xread(
+                {STREAM_CPU_SCORES: cpu_id, STREAM_GPU_SCORES: gpu_id},
+                count=200, block=500
+            )
+            for stream_name, messages in (results or []):
+                for msg_id, data in messages:
+                    if stream_name == STREAM_CPU_SCORES:
+                        cpu_id = msg_id
+                        state.cpu_scores_direct += 1
+                        if data.get("is_fraud", "").lower() in ("true", "1"):
+                            state.cpu_fraud_count += 1
+                            state.cpu_fraud_value += float(data.get("amount", 0))
+                    else:
+                        gpu_id = msg_id
+                        state.gpu_scores_direct += 1
+                        if data.get("is_fraud", "").lower() in ("true", "1"):
+                            state.gpu_fraud_count += 1
+                            state.gpu_fraud_value += float(data.get("amount", 0))
+        except Exception as e:
+            logger.warning(f"Score consumer error: {e}")
+            await asyncio.sleep(1)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
     app.state.redis = r
     asyncio.create_task(consume_metrics(r))
+    asyncio.create_task(consume_scores(r))   # reads directly from FB score streams
     asyncio.create_task(poll_stream_lengths(r))
     asyncio.create_task(broadcast_ws())
-    logger.info("Dashboard started")
+    logger.info("Dashboard started — reading all data from Feature Bus streams")
     yield
     await r.aclose()
 
@@ -249,8 +306,13 @@ async def ws_metrics(websocket: WebSocket):
         ws_clients.remove(websocket)
 
 
-# ─── Static files (React build) ───────────────────────────────────────────────
+# ─── Static files ─────────────────────────────────────────────────────────────
 
 STATIC_DIR = Path(__file__).parent / "static"
+
+@app.get("/")
+async def root():
+    return FileResponse(str(STATIC_DIR / "index.html"))
+
 if STATIC_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
